@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "co-reading-kit": {
+      "command": "node",
+      "args": ["<absolute-path-to-co-reading-kit>/src/mcp-server.js"],
+      "env": {
+        "READING_STATE_DIR": "<absolute-path-to-your-reading-state>"
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "co-reading-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A low-token MCP toolkit for AI-assisted reading with local EPUB/TXT/Markdown books.",
+  "keywords": [
+    "mcp",
+    "reading",
+    "epub",
+    "ai-reading",
+    "co-reading",
+    "llm"
+  ],
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "co-reading-kit": "src/mcp-server.js"
+  },
+  "files": [
+    "src/",
+    "scripts/",
+    "templates/",
+    "skill/",
+    "docs/",
+    "examples/",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "scripts": {
+    "check": "node --check src/mcp-server.js",
+    "start": "node src/mcp-server.js",
+    "test:smoke": "node scripts/smoke-test.js",
+    "test": "npm run check && npm run test:smoke",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "adm-zip": "^0.5.17",
+    "fast-xml-parser": "^5.8.0",
+    "html-to-text": "^10.0.0"
+  }
+}
