@@ -136,6 +136,8 @@ CYBERBOSS_STATE_DIR
 
 ## 工具总览
 
+当前提供 14 个 MCP 工具。
+
 | 工具 | 用途 | 读取 original.md？ | 读取 chunk 正文？ | 写入文件？ |
 | --- | --- | --- | --- | --- |
 | `reading_import_book` | 导入本地书并切片 | 否 | 否 | 是 |
@@ -150,6 +152,8 @@ CYBERBOSS_STATE_DIR
 | `reading_update_note` | 写入阅读笔记 | 否 | 否 | 是 |
 | `reading_read_note` | 读取笔记固定区块 | 否 | 否 | 否 |
 | `reading_resume_book` | 按进度恢复阅读 | 否 | 可选，只读取一个 chunk | 否 |
+| `reading_link_weread_book` | 链接微信读书书籍和本地书 | 否 | 否 | 是 |
+| `reading_find_weread_context` | 根据微信读书划线定位本地 chunk 上下文 | 否 | 可选，只读取一个 chunk | 否 |
 
 ## 工具示例
 
@@ -270,6 +274,34 @@ CYBERBOSS_STATE_DIR
 {
   "bookId": "薄雾",
   "readChunk": true
+}
+```
+
+## 微信读书联动
+
+如果你通过微信读书 Skill 拿到了书名、bookId 或划线 `markText`，可以先把微信读书里的书和本地书链接起来：
+
+`reading_link_weread_book`
+
+链接后，使用 `reading_find_weread_context` 可以根据划线原文定位本地 chunk，并返回上下文。
+
+示例：
+
+```json
+{
+  "wereadTitle": "薄雾[无限]",
+  "localBookId": "薄雾",
+  "confirm": true
+}
+```
+
+再查划线上下文：
+
+```json
+{
+  "wereadTitle": "薄雾[无限]",
+  "markText": "一种深刻的孤独",
+  "includeChunk": true
 }
 ```
 

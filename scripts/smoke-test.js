@@ -11,6 +11,7 @@ const SAMPLE_BOOK_PATH = path.join(PROJECT_ROOT, "examples", "sample-book.txt");
 const STATE_DIR = path.join(PROJECT_ROOT, ".tmp", "smoke-state");
 const STATE_DIR_ARG = ".tmp/smoke-state";
 const EXPECTED_TOOL_NAMES = [
+  "reading_find_weread_context",
   "reading_import_book",
   "reading_list_books",
   "reading_get_manifest",
@@ -23,6 +24,7 @@ const EXPECTED_TOOL_NAMES = [
   "reading_update_note",
   "reading_read_note",
   "reading_resume_book",
+  "reading_link_weread_book",
 ];
 
 function assert(condition, message) {
@@ -165,6 +167,19 @@ async function main() {
       return payload;
     });
 
+    await runStep("link weread book", async () => {
+      const payload = await callTool(client, "reading_link_weread_book", {
+        wereadTitle: "示例书",
+        localBookId: "sample-book",
+        confirm: true,
+        stateDir: STATE_DIR_ARG,
+      });
+
+      assert(payload?.ok === true, "reading_link_weread_book did not return ok=true");
+      assert(payload.result?.action === "linked", "reading_link_weread_book should link sample-book");
+      return payload;
+    });
+
     await runStep("build index", async () => {
       const payload = await callTool(client, "reading_build_index", {
         bookId: "sample-book",
@@ -223,6 +238,21 @@ async function main() {
       assert(payload?.ok === true, "reading_search_exact did not return ok=true");
       assert(Array.isArray(payload.results), "reading_search_exact.results must be an array");
       assert(payload.results.length > 0, "reading_search_exact must return at least one result");
+      return payload;
+    });
+
+    await runStep("find weread context", async () => {
+      const payload = await callTool(client, "reading_find_weread_context", {
+        wereadTitle: "示例书",
+        markText: "清晨的城里有一层很薄的雾",
+        includeChunk: true,
+        stateDir: STATE_DIR_ARG,
+      });
+
+      assert(payload?.ok === true, "reading_find_weread_context did not return ok=true");
+      assert(payload.localBookId === "sample-book", "reading_find_weread_context should resolve sample-book");
+      assert(Number(payload.search?.resultCount) > 0, "reading_find_weread_context must return at least one result");
+      assert(payload.chunk?.chunkId === "ch000", "reading_find_weread_context should return ch000");
       return payload;
     });
 

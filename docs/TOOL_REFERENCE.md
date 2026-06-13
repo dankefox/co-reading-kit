@@ -1,8 +1,8 @@
 # Tool Reference
 
-本文档概览 Co Reading Kit 当前提供的 12 个 MCP 工具。
+本文档概览 Co Reading Kit 当前提供的 14 个 MCP 工具。
 
-`npm run test:smoke` 会直接调用全部 12 个 MCP 工具，验证基础链路。
+`npm run test:smoke` 会直接调用全部 14 个 MCP 工具，验证基础链路。
 
 ## `reading_import_book`
 
@@ -111,3 +111,21 @@
 - 是否读取正文：可选读取一个 chunk
 - 是否写文件：否
 - 典型使用场景：继续上次阅读
+
+## `reading_link_weread_book`
+
+- 用途：把微信读书里的书映射到本地导入书 `localBookId`
+- 输入参数：`wereadTitle`、`wereadBookId`、`wereadAuthor`、`localBookId`、`confirm`、`listPending`、`stateDir`
+- 返回结果概要：`book-map.json` 路径、脚本 stdout/stderr、映射结果或待确认结果
+- 是否读取正文：否，不读取 `original.md`
+- 是否写文件：是，会写入 `reading/book-map.json`
+- 典型使用场景：先把微信读书的书与本地书建立稳定映射
+
+## `reading_find_weread_context`
+
+- 用途：根据微信读书划线原文 `markText` 精确定位本地 chunk，并可选返回一个 chunk 上下文
+- 输入参数：`markText`、`wereadTitle`、`wereadBookId`、`localBookId`、`includeChunk`、`limit`、`maxPreview`、`stateDir`
+- 返回结果概要：WeRead 信息、解析出的 `localBookId`、映射状态、exact 搜索结果、可选一个 chunk
+- 是否读取正文：最多读取一个 chunk；不读取 `original.md`
+- 是否写文件：否
+- 典型使用场景：从微信读书划线直接回到本地共读上下文

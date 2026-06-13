@@ -12,6 +12,8 @@ const execFileAsync = promisify(execFile);
 const PROJECT_ROOT = resolveProjectRoot();
 const DEFAULT_SEARCH_LIMIT = 10;
 const DEFAULT_SEARCH_PREVIEW = 220;
+const DEFAULT_WEREAD_CONTEXT_LIMIT = 5;
+const DEFAULT_WEREAD_CONTEXT_PREVIEW = 260;
 const DEFAULT_NOTE_MAX_CHARS = 12000;
 const DEFAULT_MANIFEST_MAX_CHUNKS = 300;
 const MAX_MANIFEST_MAX_CHUNKS = 1000;
@@ -291,6 +293,155 @@ function buildNoteFilePath(stateDir, bookId) {
 function buildBookDirPath(stateDir, bookId) {
   const readingDir = safeJoin(stateDir, "reading");
   return safeJoin(readingDir, `books/${assertSafeBookId(bookId)}`);
+}
+
+function buildBookMapPath(stateDir) {
+  return safeJoin(stateDir, "reading/book-map.json");
+}
+
+function loadBookMapState(stateDir) {
+  const bookMapPath = buildBookMapPath(stateDir);
+  if (!fs.existsSync(bookMapPath)) {
+    return {
+      bookMapPath,
+      bookMap: {
+        version: 1,
+        updatedAt: "",
+        links: [],
+        pending: [],
+      },
+      exists: false,
+    };
+  }
+
+  const bookMap = readJsonFile(bookMapPath);
+  return {
+    bookMapPath,
+    bookMap: {
+      version: Number(bookMap.version) || 1,
+      updatedAt: bookMap.updatedAt || "",
+      links: Array.isArray(bookMap.links) ? bookMap.links : [],
+      pending: Array.isArray(bookMap.pending) ? bookMap.pending : [],
+    },
+    exists: true,
+  };
+}
+
+function findLinkedWereadMapping(bookMap, input) {
+  const links = Array.isArray(bookMap.links) ? bookMap.links : [];
+  if (input.wereadBookId) {
+    const byBookId = links.find((item) => {
+      return String(item.wereadBookId || "") === String(input.wereadBookId);
+    });
+    if (byBookId) {
+      return {
+        status: "linked",
+        matchedBy: "wereadBookId",
+        record: byBookId,
+      };
+    }
+  }
+
+  if (input.wereadTitle) {
+    const byTitle = links.find((item) => {
+      return String(item.wereadTitle || "") === String(input.wereadTitle);
+    });
+    if (byTitle) {
+      return {
+        status: "linked",
+        matchedBy: "wereadTitle",
+        record: byTitle,
+      };
+    }
+  }
+
+  return null;
+}
+
+function findPendingWereadMapping(bookMap, input) {
+  const pending = Array.isArray(bookMap.pending) ? bookMap.pending : [];
+  if (input.wereadBookId) {
+    const byBookId = pending.find((item) => {
+      return String(item.wereadBookId || "") === String(input.wereadBookId);
+    });
+    if (byBookId) {
+      return {
+        status: "pending",
+        matchedBy: "wereadBookId",
+        record: byBookId,
+      };
+    }
+  }
+
+  if (input.wereadTitle) {
+    const byTitle = pending.find((item) => {
+      return String(item.wereadTitle || "") === String(input.wereadTitle);
+    });
+    if (byTitle) {
+      return {
+        status: "pending",
+        matchedBy: "wereadTitle",
+        record: byTitle,
+      };
+    }
+  }
+
+  return null;
+}
+
+function resolveLocalBookIdFromWereadMapping(stateDir, input) {
+  if (input.localBookId) {
+    const localBookId = assertSafeBookId(input.localBookId);
+    return {
+      localBookId,
+      mapping: {
+        matchedBy: "localBookId",
+        status: "linked",
+      },
+      warnings: [],
+    };
+  }
+
+  const { bookMapPath, bookMap, exists } = loadBookMapState(stateDir);
+  if (!exists) {
+    const error = new Error(
+      "Cannot resolve localBookId from WeRead book mapping. Please call reading_link_weread_book first or pass localBookId."
+    );
+    error.bookMapPath = normalizePath(bookMapPath);
+    throw error;
+  }
+
+  const linked = findLinkedWereadMapping(bookMap, input);
+  if (linked) {
+    return {
+      localBookId: assertSafeBookId(linked.record.localBookId),
+      mapping: {
+        matchedBy: linked.matchedBy,
+        status: "linked",
+      },
+      warnings: [],
+    };
+  }
+
+  const pending = findPendingWereadMapping(bookMap, input);
+  if (pending) {
+    return {
+      localBookId: "",
+      mapping: {
+        matchedBy: pending.matchedBy,
+        status: "pending",
+      },
+      warnings: [
+        "WeRead book mapping exists in pending status. Please confirm it first with reading_link_weread_book.",
+      ],
+    };
+  }
+
+  const error = new Error(
+    "Cannot resolve localBookId from WeRead book mapping. Please call reading_link_weread_book first or pass localBookId."
+  );
+  error.bookMapPath = normalizePath(bookMapPath);
+  throw error;
 }
 
 function loadProgressState(stateDir) {
@@ -1120,6 +1271,150 @@ async function readingBuildIndex(args) {
   };
 }
 
+async function readingLinkWereadBook(args = {}) {
+  const stateDir = resolveStateDir(args.stateDir);
+  const warnings = [];
+
+  if (args.listPending) {
+    const result = await runNodeScript("link-reading-book-map.js", [
+      "--list-pending",
+      "--state-dir", stateDir,
+      "--json",
+    ], {
+      stateDir,
+      expectJson: true,
+    });
+
+    return {
+      ok: true,
+      stateDir: normalizePath(stateDir),
+      bookMapPath: normalizePath(buildBookMapPath(stateDir)),
+      stdout: result.stdout,
+      stderr: result.stderr,
+      result: result.json,
+      warnings,
+    };
+  }
+
+  if (!args.wereadTitle && !args.wereadBookId) {
+    throw new Error("wereadTitle or wereadBookId is required");
+  }
+
+  if (args.confirm && !args.localBookId) {
+    throw new Error("confirm=true requires localBookId");
+  }
+
+  const scriptArgs = ["--state-dir", stateDir, "--json"];
+  if (args.wereadTitle) {
+    scriptArgs.push("--weread-title", String(args.wereadTitle));
+  }
+  if (args.wereadBookId) {
+    scriptArgs.push("--weread-book-id", String(args.wereadBookId));
+  }
+  if (args.wereadAuthor) {
+    scriptArgs.push("--weread-author", String(args.wereadAuthor));
+  }
+  if (args.localBookId) {
+    scriptArgs.push("--local-book-id", assertSafeBookId(args.localBookId));
+  }
+  if (args.confirm) {
+    scriptArgs.push("--confirm");
+  }
+
+  const result = await runNodeScript("link-reading-book-map.js", scriptArgs, {
+    stateDir,
+    expectJson: true,
+  });
+
+  return {
+    ok: true,
+    stateDir: normalizePath(stateDir),
+    bookMapPath: normalizePath(buildBookMapPath(stateDir)),
+    stdout: result.stdout,
+    stderr: result.stderr,
+    result: result.json,
+    warnings,
+  };
+}
+
+async function readingFindWereadContext(args = {}) {
+  const stateDir = resolveStateDir(args.stateDir);
+  const warnings = [];
+  const mappingResult = resolveLocalBookIdFromWereadMapping(stateDir, {
+    localBookId: args.localBookId,
+    wereadTitle: args.wereadTitle,
+    wereadBookId: args.wereadBookId,
+  });
+  warnings.push(...mappingResult.warnings);
+
+  if (mappingResult.mapping.status === "pending") {
+    return {
+      ok: true,
+      weread: {
+        wereadTitle: String(args.wereadTitle || ""),
+        wereadBookId: String(args.wereadBookId || ""),
+        markText: String(args.markText || ""),
+      },
+      localBookId: "",
+      mapping: mappingResult.mapping,
+      search: {
+        query: String(args.markText || ""),
+        resultCount: 0,
+        results: [],
+      },
+      chunk: null,
+      warnings,
+    };
+  }
+
+  const localBookId = mappingResult.localBookId;
+  const searchResult = await readingSearch({
+    bookId: localBookId,
+    query: args.markText,
+    limit: args.limit ?? DEFAULT_WEREAD_CONTEXT_LIMIT,
+    maxPreview: args.maxPreview ?? DEFAULT_WEREAD_CONTEXT_PREVIEW,
+    includeText: false,
+    stateDir,
+  }, true);
+  warnings.push(...(Array.isArray(searchResult.warnings) ? searchResult.warnings : []));
+
+  if (!Array.isArray(searchResult.results) || !searchResult.results.length) {
+    warnings.push("No exact chunk match found for the given WeRead highlight.");
+  }
+
+  let chunk = null;
+  if (args.includeChunk !== false && Array.isArray(searchResult.results) && searchResult.results.length) {
+    const firstResult = searchResult.results[0];
+    try {
+      chunk = readingGetChunk({
+        bookId: localBookId,
+        chunkId: firstResult.chunkId,
+        stateDir,
+      });
+    } catch (error) {
+      warnings.push(error.message || String(error));
+    }
+  }
+
+  return {
+    ok: true,
+    weread: {
+      wereadTitle: String(args.wereadTitle || ""),
+      wereadBookId: String(args.wereadBookId || ""),
+      markText: String(args.markText || ""),
+    },
+    localBookId,
+    mapping: mappingResult.mapping,
+    search: {
+      query: String(searchResult.query || args.markText || ""),
+      resultCount: Number(searchResult.resultCount || 0),
+      results: Array.isArray(searchResult.results) ? searchResult.results : [],
+    },
+    chunk,
+    warnings,
+  };
+}
+
 async function readingImportBook(args) {
   const stateDir = resolveStateDir(args.stateDir);
   const warnings = [];
@@ -1670,6 +1965,54 @@ async function main() {
     }
   });
 
+  server.registerTool("reading_link_weread_book", {
+    description: "Link a WeRead book to a local imported book using reading/book-map.json.",
+    inputSchema: {
+      wereadTitle: z.string().optional(),
+      wereadBookId: z.string().optional(),
+      wereadAuthor: z.string().optional(),
+      localBookId: z.string().optional(),
+      confirm: z.boolean().optional(),
+      listPending: z.boolean().optional(),
+      stateDir: z.string().optional(),
+    },
+  }, async (args) => {
+    try {
+      return createToolResult(await readingLinkWereadBook({
+        ...args,
+        confirm: Boolean(args.confirm),
+        listPending: Boolean(args.listPending),
+      }));
+    } catch (error) {
+      return createToolError(error);
+    }
+  });
+
+  server.registerTool("reading_find_weread_context", {
+    description: "Resolve a WeRead highlight to a local chunk by exact search and optionally read one chunk.",
+    inputSchema: {
+      markText: z.string(),
+      wereadTitle: z.string().optional(),
+      wereadBookId: z.string().optional(),
+      localBookId: z.string().optional(),
+      includeChunk: z.boolean().optional(),
+      limit: z.number().int().positive().optional(),
+      maxPreview: z.number().int().min(80).optional(),
+      stateDir: z.string().optional(),
+    },
+  }, async (args) => {
+    try {
+      return createToolResult(await readingFindWereadContext({
+        ...args,
+        includeChunk: args.includeChunk !== false,
+        limit: args.limit ?? DEFAULT_WEREAD_CONTEXT_LIMIT,
+        maxPreview: args.maxPreview ?? DEFAULT_WEREAD_CONTEXT_PREVIEW,
+      }));
+    } catch (error) {
+      return createToolError(error);
+    }
+  });
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
@@ -1696,4 +2039,6 @@ module.exports = {
   readingImportBook,
   readingGetManifest,
   readingListBooks,
+  readingLinkWereadBook,
+  readingFindWereadContext,
 };

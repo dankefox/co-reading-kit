@@ -36,3 +36,14 @@ reading_resume_book
 → 讨论后 reading_update_note
 → reading_update_progress
 ```
+
+## 5. 根据微信读书划线继续共读
+
+```text
+微信读书 Skill 获取 markText / wereadTitle / wereadBookId
+→ reading_link_weread_book 建立映射
+→ reading_find_weread_context 定位本地 chunk
+→ 根据 chunk.text 讨论
+→ reading_update_note 写入“摘录与想法”
+→ reading_update_progress 更新进度
+```

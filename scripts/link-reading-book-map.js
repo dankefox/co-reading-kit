@@ -69,8 +69,8 @@ function parseArgs(argv) {
     return args;
   }
 
-  if (!args.wereadTitle && !args.confirm) {
-    throw new Error("Missing required argument: --weread-title <title>");
+  if (!args.wereadTitle && !args.wereadBookId && !args.confirm) {
+    throw new Error("Missing required argument: --weread-title <title> or --weread-book-id <id>");
   }
 
   if (args.confirm && !args.localBookId) {
