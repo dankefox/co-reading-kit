@@ -1,27 +1,27 @@
-# Co Reading Kit
+# Co Reading Kit｜轻便的人机共读 MCP
 
 Co Reading Kit 是一个低 token 的人机共读 MCP 工具包。它会把本地 EPUB/TXT/Markdown 导入成 chunks，让 AI 只读取需要讨论的片段，并把共读结果写入长期阅读笔记和进度文件。
 
-## Features
+## 功能特性
 
-- 支持 Import EPUB/TXT/Markdown
-- 支持 Build lightweight search index
-- 支持 Keyword search
-- 支持 Exact quote search
-- 支持 Read one chunk at a time
-- 支持 Save reading notes
-- 支持 Save reading progress
-- 支持 Resume reading from progress
-- 支持 List local books
-- 支持 Read local manifest/chunk map
-- No database required
-- No vector database required
-- Local-first storage
+- 导入本地 EPUB/TXT/Markdown 书籍
+- 构建轻量搜索索引
+- 支持关键词搜索
+- 支持原文/划线精确搜索
+- 默认一次只读取一个 chunk
+- 写入长期阅读笔记
+- 保存阅读进度
+- 根据进度恢复阅读
+- 列出本地书库
+- 查看本地 manifest / chunk 切片地图
+- 不需要数据库
+- 不需要向量数据库
+- 本地优先，数据默认保存在用户自己的 `stateDir`
 
 ## 安装
 
 ```powershell
-git clone <repo-url>
+git clone https://github.com/Youxuuuuu/co-reading-kit.git
 cd co-reading-kit
 npm install
 npm run check
@@ -55,7 +55,9 @@ npm run pack:dry
 
 ## stateDir 说明
 
-`stateDir` 的解析顺序：
+`stateDir` 是 Co Reading Kit 保存书籍、笔记和进度的本地状态目录。
+
+解析顺序如下：
 
 ```text
 工具入参 stateDir
@@ -76,13 +78,13 @@ CYBERBOSS_STATE_DIR
 
 其中：
 
-- `books/` 存放导入后的书、manifest、chunk 文件和搜索索引
-- `notes/` 存放长期阅读笔记
-- `progress.json` 存放阅读进度
+- `books/` 存放导入后的书、manifest、chunk 文件和搜索索引。
+- `notes/` 存放长期阅读笔记。
+- `progress.json` 存放阅读进度。
 
 ## MCP 客户端配置示例
 
-发布后可用：
+发布到 npm 后可用：
 
 ```json
 {
@@ -134,20 +136,20 @@ CYBERBOSS_STATE_DIR
 
 ## 工具总览
 
-| Tool | Purpose | Reads original.md? | Reads chunk text? | Writes files? |
+| 工具 | 用途 | 读取 original.md？ | 读取 chunk 正文？ | 写入文件？ |
 | --- | --- | --- | --- | --- |
-| `reading_import_book` | 导入本地书并切片 | No | No | Yes |
-| `reading_list_books` | 列出本地书库 | No | No | No |
-| `reading_get_manifest` | 查看书籍结构和 chunk 地图 | No | No | No |
-| `reading_search` | 关键词搜索 | No | Fallback only | No |
-| `reading_search_exact` | 精确原文搜索 | No | Yes, for exact scan | No |
-| `reading_get_chunk` | 读取一个 chunk 正文 | No | One chunk | No |
-| `reading_get_progress` | 查看阅读进度 | No | No | No |
-| `reading_build_index` | 为书建立搜索索引 | No | Reads chunk files | Yes |
-| `reading_update_progress` | 写入进度文件 | No | No | Yes |
-| `reading_update_note` | 写入阅读笔记 | No | No | Yes |
-| `reading_read_note` | 读取笔记固定区块 | No | No | No |
-| `reading_resume_book` | 按进度恢复阅读 | No | One chunk optional | No |
+| `reading_import_book` | 导入本地书并切片 | 否 | 否 | 是 |
+| `reading_list_books` | 列出本地书库 | 否 | 否 | 否 |
+| `reading_get_manifest` | 查看书籍结构和 chunk 地图 | 否 | 否 | 否 |
+| `reading_search` | 关键词搜索 | 否 | 仅在索引未命中时 fallback 扫描 | 否 |
+| `reading_search_exact` | 精确原文搜索 | 否 | 是，用于精确扫描 chunks | 否 |
+| `reading_get_chunk` | 读取一个 chunk 正文 | 否 | 是，只读取一个 chunk | 否 |
+| `reading_get_progress` | 查看阅读进度 | 否 | 否 | 否 |
+| `reading_build_index` | 为书建立搜索索引 | 否 | 是，会读取 chunk 文件生成索引 | 是 |
+| `reading_update_progress` | 写入进度文件 | 否 | 否 | 是 |
+| `reading_update_note` | 写入阅读笔记 | 否 | 否 | 是 |
+| `reading_read_note` | 读取笔记固定区块 | 否 | 否 | 否 |
+| `reading_resume_book` | 按进度恢复阅读 | 否 | 可选，只读取一个 chunk | 否 |
 
 ## 工具示例
 
@@ -166,10 +168,10 @@ CYBERBOSS_STATE_DIR
 
 说明：
 
-- 导入结果保存到 `<stateDir>/reading/books/<bookId>/`
-- 默认不会把整本书读进上下文
-- 导入后可使用 `reading_build_index` 或 `buildIndex=true` 建索引
-- 后续可配合 `reading_search`、`reading_get_manifest`、`reading_get_chunk` 共读
+- 导入结果保存到 `<stateDir>/reading/books/<bookId>/`。
+- 默认不会把整本书读进上下文。
+- 导入后可使用 `reading_build_index` 或 `buildIndex=true` 建索引。
+- 后续可配合 `reading_search`、`reading_get_manifest`、`reading_get_chunk` 共读。
 
 ### `reading_list_books`
 
@@ -183,10 +185,10 @@ CYBERBOSS_STATE_DIR
 
 说明：
 
-- 用于查看当前本地书库有哪些书
-- 不读取原文
-- 不读取 chunks
-- 只读取 manifest、progress 和索引状态
+- 用于查看当前本地书库有哪些书。
+- 不读取原文。
+- 不读取 chunks。
+- 只读取 manifest、progress 和索引状态。
 
 ### `reading_get_manifest`
 
@@ -201,11 +203,11 @@ CYBERBOSS_STATE_DIR
 
 说明：
 
-- 用于查看一本书的结构和 chunk 列表
-- 不读取 `original.md`
-- 不读取 chunk 正文
-- 只读取 manifest
-- 如果要读具体正文，使用 `reading_get_chunk`
+- 用于查看一本书的结构和 chunk 列表。
+- 不读取 `original.md`。
+- 不读取 chunk 正文。
+- 只读取 manifest。
+- 如果要读具体正文，使用 `reading_get_chunk`。
 
 ### `reading_search`
 
@@ -296,6 +298,6 @@ co-reading-kit/
 
 更多说明可以看：
 
-- [docs/TOOL_REFERENCE.md](/D:/study/co-reading-kit/docs/TOOL_REFERENCE.md)
-- [docs/WORKFLOW.md](/D:/study/co-reading-kit/docs/WORKFLOW.md)
-- [examples/mcp-config.example.json](/D:/study/co-reading-kit/examples/mcp-config.example.json)
+- [工具参考](docs/TOOL_REFERENCE.md)
+- [共读流程](docs/WORKFLOW.md)
+- [MCP 配置示例](examples/mcp-config.example.json)
