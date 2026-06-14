@@ -1,6 +1,27 @@
 {
-  "bookId": "example-book",
-  "currentChunkId": "ch000",
-  "lastReadAt": "2026-06-12T00:00:00.000Z",
-  "notesPath": "notes/example-book.md"
+  "updatedAt": "2026-06-14T00:00:00.000Z",
+  "recentBooks": [
+    {
+      "localBookId": "example-book",
+      "title": "示例书",
+      "lastReadAt": "2026-06-14T00:00:00.000Z"
+    }
+  ],
+  "books": {
+    "example-book": {
+      "bookId": "example-book",
+      "localBookId": "example-book",
+      "title": "示例书",
+      "author": "示例作者",
+      "lastChunkId": "ch000",
+      "nextChunkId": "ch001",
+      "lastPath": "chunks/ch000.md",
+      "nextPath": "chunks/ch001.md",
+      "lastSectionTitle": "第一章：雾",
+      "lastReadAt": "2026-06-14T00:00:00.000Z",
+      "notePath": "reading/notes/example-book.md",
+      "currentThemes": ["雾", "书房", "慢读"],
+      "currentMode": "close-reading"
+    }
+  }
 }
