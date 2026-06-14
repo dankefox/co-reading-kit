@@ -305,6 +305,8 @@ CYBERBOSS_STATE_DIR
 }
 ```
 
+涉及微信读书划线、用户明确引用的原文，或 `reading_find_weread_context` 返回的定位结果时，讨论内容应写入 `摘录与想法`，不要写进 `交叉关联`。如果只是搜索还没有展开讨论，则不要写入 notes；同时不要把整段 chunk 原文完整抄进笔记。
+
 ## 隐私和版权说明
 
 - 本工具是 local-first。
