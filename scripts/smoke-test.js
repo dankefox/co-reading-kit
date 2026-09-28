@@ -149,6 +149,7 @@ async function main() {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
+      READING_STATE_DIR: STATE_DIR,
     },
     stderr: "pipe",
   });
@@ -265,6 +266,18 @@ async function main() {
       assert(payload?.ok === true, "reading_search_exact without scope did not return ok=true");
       assert(Array.isArray(payload.results), "reading_search_exact without scope must return results");
       assert(payload.results.length > 0, "reading_search_exact without scope must search all books");
+      return payload;
+    });
+
+    await runStep("search exact accepts the reported query-limit shape", async () => {
+      const payload = await callTool(client, "reading_search_exact", {
+        query: "耳洞早晨 第四章",
+        limit: 10,
+      });
+
+      assert(payload?.ok === true, "reported reading_search_exact shape did not return ok=true");
+      assert(Array.isArray(payload.results), "reported reading_search_exact shape must return results");
+      assert(payload.results.length === 0, "reported query should produce a valid empty result in smoke state");
       return payload;
     });
 
